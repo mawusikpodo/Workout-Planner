@@ -143,7 +143,7 @@ fun ExerciseThumbnail(
   playing: Boolean,
   onToggle: () -> Unit,
   modifier: Modifier = Modifier,
-  size: Dp = 48.dp,
+  size: Dp = 60.dp,
 ) {
   val shape = RoundedCornerShape(if (size > 50.dp) 14.dp else 10.dp)
   Surface(
@@ -156,14 +156,14 @@ fun ExerciseThumbnail(
       },
     shape = shape,
     color = StudioFrame,
-    border = if (playing) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, Hairline),
+    border = if (playing) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
   ) {
     Box {
       ExerciseFigure(
         motion = exercise.motion,
         exerciseId = exercise.id,
         playing = playing,
-        modifier = Modifier.matchParentSize().padding(2.dp),
+        modifier = Modifier.matchParentSize(),
       )
       Box(
         Modifier.align(Alignment.BottomEnd).padding(3.dp).size(16.dp).clip(CircleShape).background(Ground).border(1.dp, Hairline, CircleShape),
@@ -220,13 +220,13 @@ fun ExerciseSheet(
       Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp)).background(StudioFrame).border(1.dp, Hairline, RoundedCornerShape(16.dp))) {
+      Box(Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(16.dp)).background(StudioFrame)) {
         ExerciseFigure(
           motion = exercise.motion,
           exerciseId = exercise.id,
           playing = true,
           contentDescription = "${exercise.name} demonstration",
-          modifier = Modifier.fillMaxSize().padding(12.dp),
+          modifier = Modifier.fillMaxSize(),
         )
       }
       Row(
@@ -248,7 +248,7 @@ fun ExerciseSheet(
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         DifficultyBars(exercise.difficulty)
         Text(
-          listOf("Beginner", "Intermediate", "Advanced")[exercise.difficulty - 1] + " · " + exercise.equipment.label,
+          listOf("Beginner", "Intermediate", "Advanced").getOrElse(exercise.difficulty - 1) { "All levels" } + " · " + exercise.equipment.label,
           style = MaterialTheme.typography.bodyMedium,
           color = Muted,
         )

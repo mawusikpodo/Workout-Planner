@@ -32,7 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     fun create(context: Context): AppDatabase =
       Room.databaseBuilder(context, AppDatabase::class.java, "workout-planner.db")
         .addMigrations(MIGRATION_1_2)
-        .fallbackToDestructiveMigration()
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
   }
 }

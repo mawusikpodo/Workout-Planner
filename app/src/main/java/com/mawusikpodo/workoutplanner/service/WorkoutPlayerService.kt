@@ -32,17 +32,19 @@ class WorkoutPlayerService : Service() {
     createChannelIfNeeded()
     val notification = buildNotification(workoutName, statusText)
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      val serviceType =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-          ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
-        } else {
-          0
-        }
-      startForeground(NOTIFICATION_ID, notification, serviceType)
-    } else {
-      startForeground(NOTIFICATION_ID, notification)
-    }
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val serviceType =
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+          } else {
+            0
+          }
+        startForeground(NOTIFICATION_ID, notification, serviceType)
+      } else {
+        startForeground(NOTIFICATION_ID, notification)
+      }
+    } catch (_: Exception) {}
 
     return START_STICKY
   }

@@ -17,6 +17,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import android.content.Context
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +47,7 @@ open class WorkoutRepository(
     } else {
       current.add(exerciseId)
     }
-    prefs?.edit()?.putStringSet("bookmarked_exercises", current)?.apply()
+    prefs?.edit { putStringSet("bookmarked_exercises", current) }
     _bookmarks.value = current
   }
 

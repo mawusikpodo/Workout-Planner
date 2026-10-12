@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -103,7 +104,7 @@ private fun WorkoutDetailContent(
   var detailExercise by rememberSaveable { mutableStateOf<Exercise?>(null) }
   var confirmDelete by rememberSaveable { mutableStateOf(false) }
   // Only one thumbnail animates at a time; the first circuit exercise plays by default.
-  var playingIndex by rememberSaveable { mutableStateOf(workout.items.indexOfFirst { it.section == Section.CIRCUIT }) }
+  var playingIndex by rememberSaveable { mutableIntStateOf(workout.items.indexOfFirst { it.section == Section.CIRCUIT }) }
 
   if (confirmDelete) {
     AlertDialog(

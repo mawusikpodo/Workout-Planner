@@ -61,7 +61,7 @@ class TodayViewModel(repository: WorkoutRepository) : ViewModel() {
             plannedWorkout != null -> plannedWorkout
             todayEntry != null -> workouts.firstOrNull { it.focus == "Stretch" }
             else -> workouts.firstOrNull { w -> doneThisWeek.none { it.workoutId == w.id } } ?: workouts.firstOrNull()
-          } ?: plannedWorkout
+          } ?: plannedWorkout ?: workouts.firstOrNull()
 
         TodayUiState(
           loading = workouts.isEmpty(),

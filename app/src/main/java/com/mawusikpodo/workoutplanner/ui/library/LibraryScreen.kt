@@ -72,9 +72,9 @@ import com.mawusikpodo.workoutplanner.ui.components.Pill
 /** Filtering is simple enough to live in the screen; the list comes straight from the repository. */
 @Composable
 fun LibraryScreen(
+  modifier: Modifier = Modifier,
   onCreateWorkout: () -> Unit = {},
   onOpenWorkout: (String) -> Unit = {},
-  modifier: Modifier = Modifier,
 ) {
   val repository = LocalAppContainer.current.repository
   val exercises by repository.exercises.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -241,7 +241,7 @@ fun LibraryScreen(
             exercise = exercise,
             playing = playingId == exercise.id,
             onToggle = { playingId = if (playingId == exercise.id) null else exercise.id },
-            size = 56.dp,
+            size = 64.dp,
           )
           Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(exercise.name, style = MaterialTheme.typography.titleMedium)

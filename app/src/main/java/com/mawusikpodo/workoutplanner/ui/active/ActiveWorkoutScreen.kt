@@ -509,7 +509,6 @@ private fun DemoCard(item: WorkoutItem, modifier: Modifier = Modifier) {
     modifier,
     color = Surface1,
     shape = RoundedCornerShape(20.dp),
-    border = BorderStroke(1.dp, Hairline),
   ) {
     Box {
       ExerciseFigure(
@@ -518,7 +517,7 @@ private fun DemoCard(item: WorkoutItem, modifier: Modifier = Modifier) {
         playing = demoPlaying,
         slowMotion = slow,
         contentDescription = "${item.exercise.name} demonstration",
-        modifier = Modifier.fillMaxSize().padding(12.dp),
+        modifier = Modifier.fillMaxSize().padding(2.dp),
       )
       Row(
         Modifier.align(Alignment.TopEnd).padding(8.dp),

@@ -180,12 +180,12 @@ private fun FeaturedCard(workout: Workout, mode: TodayMode, onOpenWorkout: (Stri
         Pill("${workout.estimatedMinutes} min")
       }
       val circuitExercise = workout.items.firstOrNull { it.section == com.mawusikpodo.workoutplanner.model.Section.CIRCUIT }?.exercise
-      Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(18.dp)).background(StudioFrame).border(1.dp, Hairline, RoundedCornerShape(18.dp))) {
+      Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(18.dp)).background(StudioFrame)) {
         ExerciseFigure(
           motion = circuitExercise?.motion ?: com.mawusikpodo.workoutplanner.model.Motion.SQUAT,
           exerciseId = circuitExercise?.id,
           playing = mode != TodayMode.DONE,
-          modifier = Modifier.fillMaxSize().padding(8.dp),
+          modifier = Modifier.fillMaxSize(),
         )
       }
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -121,15 +121,14 @@ private fun ExerciseAssetImage(
   Box(
     modifier =
       modifier
-        .clip(RoundedCornerShape(14.dp))
-        .background(StudioFrame)
-        .border(1.dp, Hairline, RoundedCornerShape(14.dp)),
+        .clip(RoundedCornerShape(16.dp))
+        .background(StudioFrame),
     contentAlignment = Alignment.Center,
   ) {
     Image(
       painter = painter,
       contentDescription = contentDescription,
-      modifier = Modifier.fillMaxSize().padding(4.dp),
+      modifier = Modifier.fillMaxSize(),
       contentScale = ContentScale.Fit,
     )
   }
