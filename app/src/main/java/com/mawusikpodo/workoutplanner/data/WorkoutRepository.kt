@@ -16,34 +16,102 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import android.content.Context
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-class WorkoutRepository(
-  private val db: AppDatabase,
+open class WorkoutRepository(
+  private val db: AppDatabase? = null,
+  context: Context? = null,
   private val today: () -> LocalDate = { LocalDate.now() },
   private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) {
+  private val database: AppDatabase
+    get() = checkNotNull(db) { "AppDatabase is required for database operations" }
+
   fun today(): LocalDate = today.invoke()
+
+  private val prefs = context?.getSharedPreferences("workout_planner_prefs", Context.MODE_PRIVATE)
+  private val _bookmarks = MutableStateFlow<Set<String>>(prefs?.getStringSet("bookmarked_exercises", emptySet()) ?: emptySet())
+  val bookmarks: StateFlow<Set<String>> = _bookmarks.asStateFlow()
+
+  fun toggleBookmark(exerciseId: String) {
+    val current = _bookmarks.value.toMutableSet()
+    if (exerciseId in current) {
+      current.remove(exerciseId)
+    } else {
+      current.add(exerciseId)
+    }
+    prefs?.edit()?.putStringSet("bookmarked_exercises", current)?.apply()
+    _bookmarks.value = current
+  }
 
   /** Inserts or refreshes the built-in library. Safe to call on every launch. */
   suspend fun ensureSeeded() {
-    db.exerciseDao().upsertAll(SeedData.exercises)
-    db.workoutDao().upsertWorkouts(SeedData.workouts)
-    db.workoutDao().upsertItems(SeedData.workoutItems)
+    database.exerciseDao().upsertAll(SeedData.exercises)
+    database.workoutDao().upsertWorkouts(SeedData.workouts)
+    database.workoutDao().upsertItems(SeedData.workoutItems)
   }
 
-  val exercises: Flow<List<Exercise>> = db.exerciseDao().observeAll().map { list -> list.map { it.toModel() } }
+  val exercises: Flow<List<Exercise>>
+    get() = database.exerciseDao().observeAll().map { list -> list.map { it.toModel() } }
 
-  val workouts: Flow<List<Workout>> = db.workoutDao().observeAll().map { list -> list.map { it.toModel() } }
+  val workouts: Flow<List<Workout>>
+    get() = database.workoutDao().observeAll().map { list -> list.map { it.toModel() } }
 
-  fun workout(id: String): Flow<Workout?> = db.workoutDao().observe(id).map { it?.toModel() }
+  open fun workout(id: String): Flow<Workout?> = database.workoutDao().observe(id).map { it?.toModel() }
 
-  val sessions: Flow<List<Session>> = db.sessionDao().observeAll().map { list -> list.map { it.toModel() } }
+  suspend fun saveCustomWorkout(
+    id: String = "custom_${System.currentTimeMillis()}",
+    name: String,
+    level: String,
+    equipment: Equipment,
+    focus: String,
+    rounds: Int,
+    restSec: Int,
+    items: List<WorkoutItem>,
+  ): String {
+    val workoutEntity =
+      com.mawusikpodo.workoutplanner.data.db.WorkoutEntity(
+        id = id,
+        name = name,
+        level = level,
+        equipment = equipment,
+        focus = focus,
+        rounds = rounds,
+        restSec = restSec,
+        isCustom = true,
+      )
+    val itemEntities =
+      items.mapIndexed { index, item ->
+        com.mawusikpodo.workoutplanner.data.db.WorkoutItemEntity(
+          workoutId = id,
+          position = index,
+          section = item.section,
+          exerciseId = item.exercise.id,
+          durationSec = item.durationSec,
+          reps = item.reps,
+          perSide = item.perSide,
+        )
+      }
+    database.workoutDao().upsertCustomWorkout(workoutEntity, itemEntities)
+    return id
+  }
+
+  suspend fun deleteCustomWorkout(id: String) {
+    database.workoutDao().deleteWorkout(id)
+    database.workoutDao().deleteWorkoutItems(id)
+  }
+
+  val sessions: Flow<List<Session>>
+    get() = database.sessionDao().observeAll().map { list -> list.map { it.toModel() } }
 
   fun plan(from: LocalDate, to: LocalDate): Flow<List<PlanEntry>> =
-    db.planDao().observeRange(from.toEpochDay(), to.toEpochDay()).map { list -> list.map { PlanEntry(it.epochDay, it.workoutId) } }
+    database.planDao().observeRange(from.toEpochDay(), to.toEpochDay()).map { list -> list.map { PlanEntry(it.epochDay, it.workoutId) } }
 
   suspend fun saveSession(
     workoutId: String,
@@ -54,14 +122,14 @@ class WorkoutRepository(
     feeling: Feeling?,
   ): Long {
     val day = Instant.ofEpochMilli(startedAtMillis).atZone(zone()).toLocalDate().toEpochDay()
-    return db.sessionDao()
+    return database.sessionDao()
       .insert(SessionEntity(0, workoutId, workoutName, startedAtMillis, day, durationSec, exercisesCompleted, feeling))
   }
 
   /** [workoutId] null marks a rest day. */
-  suspend fun setPlan(day: LocalDate, workoutId: String?) = db.planDao().upsert(PlanEntryEntity(day.toEpochDay(), workoutId))
+  suspend fun setPlan(day: LocalDate, workoutId: String?) = database.planDao().upsert(PlanEntryEntity(day.toEpochDay(), workoutId))
 
-  suspend fun clearPlan(day: LocalDate) = db.planDao().delete(day.toEpochDay())
+  suspend fun clearPlan(day: LocalDate) = database.planDao().delete(day.toEpochDay())
 
   /**
    * Fills a Monday-based week with [goal] workouts spread across the week and rest days in between,
@@ -83,7 +151,7 @@ class WorkoutRepository(
         val workoutId = if (isTraining) candidates[(startIndex + next++).mod(candidates.size)].id else null
         if (day < today() || day.toEpochDay() in existing) null else PlanEntryEntity(day.toEpochDay(), workoutId)
       }
-    db.planDao().upsertAll(entries)
+    database.planDao().upsertAll(entries)
   }
 
   companion object {
@@ -117,6 +185,7 @@ private fun WorkoutWithItems.toModel() =
       items
         .sortedBy { it.item.position }
         .map { WorkoutItem(it.item.section, it.exercise.toModel(), it.item.durationSec, it.item.reps, it.item.perSide) },
+    isCustom = workout.isCustom,
   )
 
 private fun SessionEntity.toModel() =

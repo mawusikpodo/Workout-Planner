@@ -29,6 +29,19 @@ interface WorkoutDao {
   @Upsert suspend fun upsertWorkouts(workouts: List<WorkoutEntity>)
 
   @Upsert suspend fun upsertItems(items: List<WorkoutItemEntity>)
+
+  @Query("DELETE FROM workouts WHERE id = :id")
+  suspend fun deleteWorkout(id: String)
+
+  @Query("DELETE FROM workout_items WHERE workoutId = :workoutId")
+  suspend fun deleteWorkoutItems(workoutId: String)
+
+  @Transaction
+  suspend fun upsertCustomWorkout(workout: WorkoutEntity, items: List<WorkoutItemEntity>) {
+    upsertWorkouts(listOf(workout))
+    deleteWorkoutItems(workout.id)
+    upsertItems(items)
+  }
 }
 
 @Dao

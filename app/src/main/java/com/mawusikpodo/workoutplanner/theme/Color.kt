@@ -12,3 +12,12 @@ val Muted = Color(0xFFA3A7AE)
 val Volt = Color(0xFFD4FF3A)
 val Shirt = Color(0xFFA9ADB2)
 val PastBar = Color(0xFF5A6068)
+
+// Elevated palette tokens
+val ElectricCyan = Color(0xFF00E5FF)
+val HyperCoral = Color(0xFFFF5252)
+val MintGlow = Color(0xFF26E68B)
+val Obsidian = Color(0xFF0A0B0D)
+val StudioFrame = Color(0xFF20232A)
+val Hairline = Color(0xFF2B303A)
+

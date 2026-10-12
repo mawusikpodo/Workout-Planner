@@ -32,6 +32,7 @@ data class WorkoutEntity(
   val focus: String,
   val rounds: Int,
   val restSec: Int,
+  val isCustom: Boolean = false,
 )
 
 @Entity(

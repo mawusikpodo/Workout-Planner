@@ -10,7 +10,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class WorkoutPlannerApp : Application() {
+import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+
+class WorkoutPlannerApp : Application(), ImageLoaderFactory {
   lateinit var container: AppContainer
     private set
 
@@ -18,13 +24,25 @@ class WorkoutPlannerApp : Application() {
     super.onCreate()
     container = AppContainer(this)
   }
+
+  override fun newImageLoader(): ImageLoader {
+    return ImageLoader.Builder(this)
+      .components {
+        if (Build.VERSION.SDK_INT >= 28) {
+          add(ImageDecoderDecoder.Factory())
+        } else {
+          add(GifDecoder.Factory())
+        }
+      }
+      .build()
+  }
 }
 
 /** Manual dependency container; swap for Hilt if the object graph grows. */
 class AppContainer(context: Context) {
   val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   private val database = AppDatabase.create(context)
-  val repository = WorkoutRepository(database)
+  val repository = WorkoutRepository(database, context = context)
 
   init {
     appScope.launch { repository.ensureSeeded() }

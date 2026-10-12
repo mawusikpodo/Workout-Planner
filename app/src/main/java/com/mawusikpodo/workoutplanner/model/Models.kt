@@ -72,6 +72,7 @@ data class Workout(
   val rounds: Int,
   val restSec: Int,
   val items: List<WorkoutItem>,
+  val isCustom: Boolean = false,
 ) {
   fun section(section: Section) = items.filter { it.section == section }
 

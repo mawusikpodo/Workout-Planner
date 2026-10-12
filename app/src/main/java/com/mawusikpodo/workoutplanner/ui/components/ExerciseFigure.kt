@@ -1,5 +1,7 @@
 package com.mawusikpodo.workoutplanner.ui.components
 
+import android.content.Context
+import android.graphics.drawable.Animatable
 import android.provider.Settings
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -9,41 +11,195 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.mawusikpodo.workoutplanner.model.Motion
+import com.mawusikpodo.workoutplanner.theme.Hairline
 import com.mawusikpodo.workoutplanner.theme.Ink
 import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.Outline
 import com.mawusikpodo.workoutplanner.theme.Shirt
+import com.mawusikpodo.workoutplanner.theme.StudioFrame
 import kotlin.math.floor
 
 /**
- * Looping demonstration of an exercise, drawn as a simple figure that eases between key poses.
- * Stands in for real GIF/video demos; swap the body of this composable for an image loader later.
+ * Exercise animation component. If a real GIF asset exists in assets/exercises/ matching
+ * the exercise ID or motion, it displays the high-fidelity 3D anatomical animated GIF.
+ * Otherwise, it falls back to the procedural stick-figure canvas animation.
  */
 @Composable
 fun ExerciseFigure(
   motion: Motion,
   playing: Boolean,
   modifier: Modifier = Modifier,
+  exerciseId: String? = null,
   slowMotion: Boolean = false,
   contentDescription: String? = null,
+) {
+  val context = LocalContext.current
+  val assetPath = remember(exerciseId, motion) { findExerciseAsset(context, exerciseId, motion) }
+
+  if (assetPath != null) {
+    ExerciseAssetImage(
+      assetPath = assetPath,
+      playing = playing,
+      contentDescription = contentDescription,
+      modifier = modifier,
+    )
+  } else {
+    StickFigureCanvas(
+      motion = motion,
+      playing = playing,
+      slowMotion = slowMotion,
+      contentDescription = contentDescription,
+      modifier = modifier,
+    )
+  }
+}
+
+@Composable
+private fun ExerciseAssetImage(
+  assetPath: String,
+  playing: Boolean,
+  contentDescription: String?,
+  modifier: Modifier = Modifier,
+) {
+  val context = LocalContext.current
+  val imageRequest =
+    remember(assetPath) {
+      ImageRequest.Builder(context)
+        .data("file:///android_asset/$assetPath")
+        .build()
+    }
+
+  val painter = rememberAsyncImagePainter(model = imageRequest)
+  val state = painter.state
+
+  LaunchedEffect(state, playing) {
+    if (state is AsyncImagePainter.State.Success) {
+      val drawable = state.result.drawable
+      if (drawable is Animatable) {
+        if (playing) {
+          if (!drawable.isRunning) drawable.start()
+        } else {
+          if (drawable.isRunning) drawable.stop()
+        }
+      }
+    }
+  }
+
+  Box(
+    modifier =
+      modifier
+        .clip(RoundedCornerShape(14.dp))
+        .background(StudioFrame)
+        .border(1.dp, Hairline, RoundedCornerShape(14.dp)),
+    contentAlignment = Alignment.Center,
+  ) {
+    Image(
+      painter = painter,
+      contentDescription = contentDescription,
+      modifier = Modifier.fillMaxSize().padding(4.dp),
+      contentScale = ContentScale.Fit,
+    )
+  }
+}
+
+private var cachedExerciseAssets: Set<String>? = null
+
+val SUPPORTED_IMAGE_EXTENSIONS = listOf("gif", "webp", "png")
+
+fun findExerciseAsset(context: Context, exerciseId: String?, motion: Motion): String? {
+  val assets =
+    cachedExerciseAssets
+      ?: run {
+        val list = runCatching { context.assets.list("exercises")?.toSet() }.getOrNull() ?: emptySet()
+        cachedExerciseAssets = list
+        list
+      }
+
+  return resolveExerciseAsset(assets, exerciseId, motion)
+}
+
+fun resolveExerciseAsset(assets: Set<String>, exerciseId: String?, motion: Motion): String? {
+  // 1. Exact match by exercise ID (e.g. "push_ups.gif", "plank.webp", "burpees.webp", "jump_squats.webp")
+  if (exerciseId != null) {
+    for (ext in SUPPORTED_IMAGE_EXTENSIONS) {
+      val candidate = "$exerciseId.$ext"
+      if (candidate in assets) return "exercises/$candidate"
+    }
+  }
+
+  // 2. Exact match by motion (e.g. "squat.gif", "lunge.gif")
+  val motionLower = motion.name.lowercase()
+  for (ext in SUPPORTED_IMAGE_EXTENSIONS) {
+    val motionCandidate = "$motionLower.$ext"
+    if (motionCandidate in assets) return "exercises/$motionCandidate"
+  }
+
+  // 3. Known mappings & fallbacks for exercise categories
+  val motionFallbacks = when (motion) {
+    Motion.SQUAT -> listOf("squats", "squat", "sumo_squat")
+    Motion.JUMP_SQUAT -> listOf("jump_squats", "squats")
+    Motion.LUNGE -> listOf("reverse_lunges", "lunges", "lunge")
+    Motion.PUSH -> listOf("push_ups", "knee_push_ups", "push")
+    Motion.PLANK -> listOf("plank", "planks")
+    Motion.BURPEE -> listOf("burpees", "burpee")
+    Motion.JACK -> listOf("jumping_jacks", "jumping_jack")
+    Motion.CRUNCH -> listOf("crunches", "dead_bug", "crunch")
+    Motion.CLIMBER -> listOf("mountain_climbers", "climber")
+    Motion.BRIDGE -> listOf("glute_bridge", "bridge")
+    Motion.PRESS -> listOf("arm_circles", "press")
+    Motion.HINGE -> listOf("hamstring_stretch", "hinge")
+  }
+
+  for (baseName in motionFallbacks) {
+    for (ext in SUPPORTED_IMAGE_EXTENSIONS) {
+      val candidate = "$baseName.$ext"
+      if (candidate in assets) return "exercises/$candidate"
+    }
+  }
+
+  return null
+}
+
+@Composable
+private fun StickFigureCanvas(
+  motion: Motion,
+  playing: Boolean,
+  slowMotion: Boolean,
+  contentDescription: String?,
+  modifier: Modifier = Modifier,
 ) {
   val poses = remember(motion) { posesFor(motion) }
   val animate = playing && rememberAnimationsEnabled() && poses.size > 1
@@ -65,7 +221,6 @@ fun ExerciseFigure(
   Canvas(modifier.semantics { if (contentDescription != null) this.contentDescription = contentDescription }) {
     val t = progress.value
     val index = floor(t).toInt().mod(poses.size)
-    // Hold each pose briefly, then ease into the next one.
     val raw = t - floor(t)
     val eased = FastOutSlowInEasing.transform(((raw - HOLD) / (1 - HOLD)).coerceIn(0f, 1f))
     val pose = poses[index].lerpTo(poses[(index + 1) % poses.size], eased)

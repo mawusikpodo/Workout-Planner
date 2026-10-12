@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
@@ -13,13 +15,38 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
+
+    // Release signing: supports keystore.properties, environment variables, or debug fallback
+    val keystoreFile = rootProject.file("keystore.properties")
+    val envKeystore = System.getenv("KEYSTORE_FILE")
+    val releaseSigning =
+        if (keystoreFile.exists()) {
+            val props = Properties().apply { keystoreFile.inputStream().use(::load) }
+            signingConfigs.create("release") {
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        } else if (!envKeystore.isNullOrBlank()) {
+            signingConfigs.create("release") {
+                storeFile = file(envKeystore)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        } else {
+            // Fallback so assembleRelease produces an installable signed APK when custom keys are not set
+            signingConfigs.getByName("debug")
+        }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = releaseSigning
         }
     }
     compileOptions {
@@ -84,6 +111,10 @@ dependencies {
   androidTestImplementation(libs.androidx.test.espresso.core)
 
   coreLibraryDesugaring(libs.desugar.jdk.libs)
+
+  // Image loading (GIFs)
+  implementation(libs.coil.compose)
+  implementation(libs.coil.gif)
 
   // Persistence
   implementation(libs.androidx.room.runtime)

@@ -39,6 +39,8 @@ val TopLevelKeys: List<TopLevelKey> = listOf(TodayKey, PlanKey, LibraryKey, Prog
 
 @Serializable data class WorkoutDetailKey(val workoutId: String) : NavKey
 
+@Serializable data class WorkoutBuilderKey(val workoutId: String? = null, val duplicateFromId: String? = null) : NavKey
+
 /** Full-screen player; hides the bottom bar. */
 @Serializable data class ActiveWorkoutKey(val workoutId: String) : NavKey
 

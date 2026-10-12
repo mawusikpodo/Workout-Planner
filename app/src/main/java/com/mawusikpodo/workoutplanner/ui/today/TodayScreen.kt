@@ -1,5 +1,6 @@
 package com.mawusikpodo.workoutplanner.ui.today
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -40,13 +41,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mawusikpodo.workoutplanner.LocalAppContainer
 import com.mawusikpodo.workoutplanner.R
 import com.mawusikpodo.workoutplanner.model.Workout
+import com.mawusikpodo.workoutplanner.theme.Hairline
 import com.mawusikpodo.workoutplanner.theme.Ink
+import com.mawusikpodo.workoutplanner.theme.MintGlow
 import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.Outline
+import com.mawusikpodo.workoutplanner.theme.StudioFrame
 import com.mawusikpodo.workoutplanner.theme.Surface1
 import com.mawusikpodo.workoutplanner.theme.Surface2
 import com.mawusikpodo.workoutplanner.ui.components.ExerciseFigure
 import com.mawusikpodo.workoutplanner.ui.components.Overline
+import com.mawusikpodo.workoutplanner.ui.components.Pill
 import com.mawusikpodo.workoutplanner.ui.components.PrimaryButton
 import com.mawusikpodo.workoutplanner.ui.components.ScreenTitle
 
@@ -105,7 +110,11 @@ private fun TodayContent(state: TodayUiState, onOpenWorkout: (String) -> Unit, m
 @Composable
 private fun StreakPill(streak: Int) {
   Row(
-    Modifier.clip(CircleShape).background(Surface1).padding(horizontal = 12.dp, vertical = 8.dp),
+    Modifier
+      .clip(CircleShape)
+      .background(Surface1)
+      .border(1.dp, Hairline, CircleShape)
+      .padding(horizontal = 14.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(6.dp),
   ) {
@@ -119,18 +128,20 @@ private fun WeekStrip(week: List<WeekDay>, modifier: Modifier = Modifier) {
   Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
     week.forEach { day ->
       val accent = MaterialTheme.colorScheme.primary
+      val isToday = day.status == DayStatus.TODAY
       Column(
         Modifier.weight(1f)
-          .clip(RoundedCornerShape(12.dp))
-          .background(if (day.status == DayStatus.TODAY) Surface2 else Color.Transparent)
+          .clip(RoundedCornerShape(14.dp))
+          .background(if (isToday) Surface2 else Surface1.copy(alpha = 0.5f))
+          .border(1.dp, if (isToday) accent else Hairline, RoundedCornerShape(14.dp))
           .padding(vertical = 10.dp)
           .semantics { contentDescription = "${day.label}: ${if (day.status == DayStatus.DONE) "worked out" else "no workout"}" },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        Text(day.label, style = MaterialTheme.typography.bodySmall, color = Muted)
+        Text(day.label, style = MaterialTheme.typography.bodySmall, color = if (isToday) Ink else Muted)
         Box(
-          Modifier.size(10.dp)
+          Modifier.size(12.dp)
             .clip(CircleShape)
             .background(if (day.status == DayStatus.DONE) accent else Color.Transparent)
             .border(
@@ -138,7 +149,7 @@ private fun WeekStrip(week: List<WeekDay>, modifier: Modifier = Modifier) {
               when (day.status) {
                 DayStatus.DONE -> accent
                 DayStatus.TODAY -> Ink
-                DayStatus.OTHER -> Outline
+                DayStatus.OTHER -> Hairline
               },
               CircleShape,
             )
@@ -157,29 +168,38 @@ private fun FeaturedCard(workout: Workout, mode: TodayMode, onOpenWorkout: (Stri
       TodayMode.REST_DAY -> "Rest day · optional stretch"
       TodayMode.DONE -> "Done today"
     }
-  Surface(modifier.fillMaxWidth(), color = Surface1, shape = RoundedCornerShape(24.dp)) {
+  Surface(
+    modifier = modifier.fillMaxWidth(),
+    color = Surface1,
+    shape = RoundedCornerShape(24.dp),
+    border = BorderStroke(1.dp, Hairline),
+  ) {
     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-      Overline(label, color = MaterialTheme.colorScheme.primary)
-      Box(Modifier.fillMaxWidth().height(132.dp).clip(RoundedCornerShape(16.dp)).background(Surface2)) {
+      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Overline(label, color = MaterialTheme.colorScheme.primary)
+        Pill("${workout.estimatedMinutes} min")
+      }
+      val circuitExercise = workout.items.firstOrNull { it.section == com.mawusikpodo.workoutplanner.model.Section.CIRCUIT }?.exercise
+      Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(18.dp)).background(StudioFrame).border(1.dp, Hairline, RoundedCornerShape(18.dp))) {
         ExerciseFigure(
-          workout.items.firstOrNull { it.section == com.mawusikpodo.workoutplanner.model.Section.CIRCUIT }?.exercise?.motion
-            ?: com.mawusikpodo.workoutplanner.model.Motion.SQUAT,
+          motion = circuitExercise?.motion ?: com.mawusikpodo.workoutplanner.model.Motion.SQUAT,
+          exerciseId = circuitExercise?.id,
           playing = mode != TodayMode.DONE,
           modifier = Modifier.fillMaxSize().padding(8.dp),
         )
       }
-      Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(workout.name.uppercase(), style = MaterialTheme.typography.headlineMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-          Text("${workout.estimatedMinutes} min", style = MaterialTheme.typography.bodyMedium, color = Muted)
-          Text("${workout.exerciseCount} exercises", style = MaterialTheme.typography.bodyMedium, color = Muted)
-          Text(workout.equipment.label, style = MaterialTheme.typography.bodyMedium, color = Muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          Pill("${workout.exerciseCount} moves")
+          Pill(workout.equipment.label)
+          Pill(workout.focus)
         }
       }
       PrimaryButton(
-        text = if (mode == TodayMode.DONE) "Go again" else "Start workout",
+        text = if (mode == TodayMode.DONE) "Go again" else "Start workout · ${workout.estimatedMinutes} min",
         icon = R.drawable.ic_play,
-        height = 52.dp,
+        height = 54.dp,
         onClick = { onOpenWorkout(workout.id) },
       )
     }
@@ -188,10 +208,19 @@ private fun FeaturedCard(workout: Workout, mode: TodayMode, onOpenWorkout: (Stri
 
 @Composable
 private fun WorkoutChip(workout: Workout, onClick: () -> Unit) {
-  Surface(onClick = onClick, color = Surface1, shape = RoundedCornerShape(16.dp), modifier = Modifier.width(140.dp).height(84.dp)) {
-    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
-      Text(workout.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-      Text("${workout.estimatedMinutes} min · ${workout.focus}", style = MaterialTheme.typography.bodySmall, color = Muted)
+  Surface(
+    onClick = onClick,
+    color = Surface1,
+    shape = RoundedCornerShape(16.dp),
+    border = BorderStroke(1.dp, Hairline),
+    modifier = Modifier.width(160.dp).height(96.dp),
+  ) {
+    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.SpaceBetween) {
+      Text(workout.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text("${workout.estimatedMinutes} min", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        Text(workout.focus, style = MaterialTheme.typography.bodySmall, color = Muted)
+      }
     }
   }
 }

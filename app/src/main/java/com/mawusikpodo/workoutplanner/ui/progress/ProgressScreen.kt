@@ -36,6 +36,9 @@ import com.mawusikpodo.workoutplanner.model.Session
 import com.mawusikpodo.workoutplanner.model.bestStreak
 import com.mawusikpodo.workoutplanner.model.currentStreak
 import com.mawusikpodo.workoutplanner.model.weeklyMinutes
+import androidx.compose.foundation.BorderStroke
+import com.mawusikpodo.workoutplanner.model.Feeling
+import com.mawusikpodo.workoutplanner.theme.Hairline
 import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.Outline
 import com.mawusikpodo.workoutplanner.theme.PastBar
@@ -121,8 +124,12 @@ private fun days(n: Int) = if (n == 1) "1 day" else "$n days"
 private fun WeeklyChart(minutes: List<Int>) {
   val max = (minutes.maxOrNull() ?: 0).coerceAtLeast(30)
   val peak = minutes.indexOf(minutes.max())
-  Surface(color = Surface1, shape = RoundedCornerShape(16.dp)) {
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+  Surface(
+    color = Surface1,
+    shape = RoundedCornerShape(18.dp),
+    border = BorderStroke(1.dp, Hairline),
+  ) {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
       Row(verticalAlignment = Alignment.Bottom) {
         Text("Active minutes per week", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
         Text("Last 8 weeks", style = MaterialTheme.typography.bodySmall, color = Muted)
@@ -142,23 +149,23 @@ private fun WeeklyChart(minutes: List<Int>) {
             verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom),
           ) {
             // Label only the current week and the peak, to keep the chart quiet.
-            if ((isCurrent || i == peak) && value > 0) Text("$value", style = MaterialTheme.typography.bodySmall)
+            if ((isCurrent || i == peak) && value > 0) Text("$value", style = MaterialTheme.typography.bodySmall, color = if (isCurrent) MaterialTheme.colorScheme.primary else Muted)
             Box(
               Modifier.fillMaxWidth()
-                .widthIn(max = 22.dp)
-                .height((100 * value / max).coerceAtLeast(if (value > 0) 3 else 0).dp)
-                .background(if (isCurrent) MaterialTheme.colorScheme.primary else PastBar, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                .widthIn(max = 24.dp)
+                .height((100 * value / max).coerceAtLeast(if (value > 0) 4 else 0).dp)
+                .background(if (isCurrent) MaterialTheme.colorScheme.primary else PastBar, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
             )
           }
         }
       }
-      HorizontalDivider(color = Outline)
+      HorizontalDivider(color = Hairline)
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         minutes.indices.forEach { i ->
           Text(
             if (i == minutes.lastIndex) "Now" else "-${minutes.lastIndex - i}w",
             style = MaterialTheme.typography.bodySmall,
-            color = Muted,
+            color = if (i == minutes.lastIndex) MaterialTheme.colorScheme.primary else Muted,
             modifier = Modifier.weight(1f),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
           )
@@ -177,13 +184,28 @@ private fun SessionRow(session: Session) {
       LocalDate.now().minusDays(1) -> "Yesterday"
       else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()))
     }
-  Surface(color = Surface1, shape = RoundedCornerShape(14.dp)) {
+  val feelingEmoji =
+    when (session.feeling) {
+      Feeling.EASY -> "😌 "
+      Feeling.JUST_RIGHT -> "💪 "
+      Feeling.TOUGH -> "🔥 "
+      null -> ""
+    }
+  Surface(
+    color = Surface1,
+    shape = RoundedCornerShape(14.dp),
+    border = BorderStroke(1.dp, Hairline),
+  ) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
       Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(session.workoutName, style = MaterialTheme.typography.titleMedium)
-        Text(listOfNotNull(dateLabel, session.feeling?.label).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = Muted)
+        Text(
+          listOfNotNull(dateLabel, session.feeling?.let { "$feelingEmoji${it.label}" }).joinToString(" · "),
+          style = MaterialTheme.typography.bodySmall,
+          color = Muted,
+        )
       }
-      Text("${(session.durationSec + 30) / 60} min", style = MaterialTheme.typography.bodyMedium, color = Muted)
+      Text("${(session.durationSec + 30) / 60} min", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
     }
   }
 }

@@ -28,6 +28,7 @@ import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.NavBar
 import com.mawusikpodo.workoutplanner.theme.Surface2
 import com.mawusikpodo.workoutplanner.ui.active.ActiveWorkoutScreen
+import com.mawusikpodo.workoutplanner.ui.builder.WorkoutBuilderScreen
 import com.mawusikpodo.workoutplanner.ui.complete.CompleteScreen
 import com.mawusikpodo.workoutplanner.ui.detail.WorkoutDetailScreen
 import com.mawusikpodo.workoutplanner.ui.library.LibraryScreen
@@ -39,7 +40,7 @@ import com.mawusikpodo.workoutplanner.ui.today.TodayScreen
 fun MainNavigation() {
   val navigator = remember { TopLevelBackStack(TodayKey) }
   val current = navigator.backStack.lastOrNull()
-  val showBottomBar = current !is ActiveWorkoutKey && current !is CompleteKey
+  val showBottomBar = current !is ActiveWorkoutKey && current !is CompleteKey && current !is WorkoutBuilderKey
 
   Scaffold(
     containerColor = MaterialTheme.colorScheme.background,
@@ -75,14 +76,32 @@ fun MainNavigation() {
         entryProvider {
           entry<TodayKey> { TodayScreen(onOpenWorkout = { navigator.add(WorkoutDetailKey(it)) }, modifier = content) }
           entry<PlanKey> { PlanScreen(onOpenWorkout = { navigator.add(WorkoutDetailKey(it)) }, modifier = content) }
-          entry<LibraryKey> { LibraryScreen(modifier = content) }
+          entry<LibraryKey> {
+            LibraryScreen(
+              onCreateWorkout = { navigator.add(WorkoutBuilderKey()) },
+              onOpenWorkout = { navigator.add(WorkoutDetailKey(it)) },
+              modifier = content,
+            )
+          }
           entry<ProgressKey> { ProgressScreen(modifier = content) }
           entry<WorkoutDetailKey> { key ->
             WorkoutDetailScreen(
               workoutId = key.workoutId,
               onBack = { navigator.removeLast() },
               onStart = { navigator.add(ActiveWorkoutKey(it)) },
+              onEdit = { navigator.add(WorkoutBuilderKey(workoutId = it)) },
+              onDuplicate = { navigator.add(WorkoutBuilderKey(duplicateFromId = it)) },
               modifier = content,
+            )
+          }
+          entry<WorkoutBuilderKey> { key ->
+            WorkoutBuilderScreen(
+              workoutId = key.workoutId,
+              duplicateFromId = key.duplicateFromId,
+              onBack = { navigator.removeLast() },
+              onSaved = { savedId ->
+                navigator.replaceLast(WorkoutDetailKey(savedId))
+              },
             )
           }
           entry<ActiveWorkoutKey> { key ->

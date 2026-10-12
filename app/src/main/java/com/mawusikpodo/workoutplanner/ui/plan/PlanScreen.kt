@@ -48,6 +48,7 @@ import com.mawusikpodo.workoutplanner.R
 import com.mawusikpodo.workoutplanner.data.WorkoutRepository
 import com.mawusikpodo.workoutplanner.model.Workout
 import com.mawusikpodo.workoutplanner.model.startOfWeek
+import com.mawusikpodo.workoutplanner.theme.Hairline
 import com.mawusikpodo.workoutplanner.theme.Ink
 import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.Outline
@@ -241,8 +242,8 @@ private fun DayRow(day: PlanDay, onClick: () -> Unit) {
     border =
       when {
         day.isToday -> BorderStroke(1.5.dp, accent)
-        isRest || day.planned == null -> BorderStroke(1.5.dp, Surface2)
-        else -> null
+        isRest || day.planned == null -> BorderStroke(1.dp, Hairline)
+        else -> BorderStroke(1.dp, Hairline)
       },
   ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {

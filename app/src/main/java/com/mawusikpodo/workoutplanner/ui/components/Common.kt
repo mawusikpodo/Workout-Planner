@@ -1,28 +1,35 @@
 package com.mawusikpodo.workoutplanner.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -33,10 +40,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mawusikpodo.workoutplanner.R
 import com.mawusikpodo.workoutplanner.model.Exercise
+import com.mawusikpodo.workoutplanner.theme.ElectricCyan
 import com.mawusikpodo.workoutplanner.theme.Ground
+import com.mawusikpodo.workoutplanner.theme.Hairline
 import com.mawusikpodo.workoutplanner.theme.Ink
+import com.mawusikpodo.workoutplanner.theme.MintGlow
 import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.Outline
+import com.mawusikpodo.workoutplanner.theme.StudioFrame
 import com.mawusikpodo.workoutplanner.theme.Surface1
 import com.mawusikpodo.workoutplanner.theme.Surface2
 
@@ -52,20 +63,32 @@ fun Overline(text: String, modifier: Modifier = Modifier, color: androidx.compos
 }
 
 @Composable
-fun Pill(text: String, modifier: Modifier = Modifier) {
+fun Pill(text: String, modifier: Modifier = Modifier, color: Color? = null) {
   Text(
     text,
-    modifier = modifier.clip(CircleShape).background(Surface1).padding(horizontal = 12.dp, vertical = 6.dp),
+    color = color ?: Ink,
+    modifier =
+      modifier
+        .clip(CircleShape)
+        .background(Surface1)
+        .border(1.dp, color?.copy(alpha = 0.5f) ?: Hairline, CircleShape)
+        .padding(horizontal = 12.dp, vertical = 6.dp),
     style = MaterialTheme.typography.labelMedium,
   )
 }
 
 @Composable
 fun Card(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-  Surface(modifier = modifier, color = Surface1, shape = RoundedCornerShape(16.dp), content = content)
+  Surface(
+    modifier = modifier,
+    color = Surface1,
+    shape = RoundedCornerShape(16.dp),
+    border = BorderStroke(1.dp, Hairline),
+    content = content,
+  )
 }
 
-/** Full-width volt button used for the main action on a screen. */
+/** Full-width volt/accent button used for the main action on a screen. */
 @Composable
 fun PrimaryButton(
   text: String,
@@ -74,13 +97,15 @@ fun PrimaryButton(
   @DrawableRes icon: Int? = null,
   height: Dp = 56.dp,
   enabled: Boolean = true,
+  containerColor: Color = MaterialTheme.colorScheme.primary,
+  contentColor: Color = Ground,
 ) {
   Button(
     onClick = onClick,
     enabled = enabled,
     modifier = modifier.fillMaxWidth().height(height),
     shape = CircleShape,
-    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Ground),
+    colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor),
   ) {
     if (icon != null) {
       Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
@@ -120,7 +145,7 @@ fun ExerciseThumbnail(
   modifier: Modifier = Modifier,
   size: Dp = 48.dp,
 ) {
-  val shape = RoundedCornerShape(if (size > 50.dp) 12.dp else 10.dp)
+  val shape = RoundedCornerShape(if (size > 50.dp) 14.dp else 10.dp)
   Surface(
     onClick = onToggle,
     modifier =
@@ -130,20 +155,25 @@ fun ExerciseThumbnail(
         stateDescription = if (playing) "Playing" else "Paused"
       },
     shape = shape,
-    color = Surface2,
-    border = if (playing) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+    color = StudioFrame,
+    border = if (playing) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, Hairline),
   ) {
     Box {
-      ExerciseFigure(exercise.motion, playing = playing, modifier = Modifier.matchParentSize().padding(2.dp))
+      ExerciseFigure(
+        motion = exercise.motion,
+        exerciseId = exercise.id,
+        playing = playing,
+        modifier = Modifier.matchParentSize().padding(2.dp),
+      )
       Box(
-        Modifier.align(Alignment.BottomEnd).padding(3.dp).size(15.dp).clip(CircleShape).background(Ground),
+        Modifier.align(Alignment.BottomEnd).padding(3.dp).size(16.dp).clip(CircleShape).background(Ground).border(1.dp, Hairline, CircleShape),
         contentAlignment = Alignment.Center,
       ) {
         Icon(
           painterResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play),
           contentDescription = null,
-          tint = Ink,
-          modifier = Modifier.size(8.dp),
+          tint = if (playing) MaterialTheme.colorScheme.primary else Ink,
+          modifier = Modifier.size(9.dp),
         )
       }
     }
@@ -151,13 +181,18 @@ fun ExerciseThumbnail(
 }
 
 @Composable
-fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+fun StatTile(label: String, value: String, modifier: Modifier = Modifier, accent: Color? = null) {
   Column(
-    modifier.clip(RoundedCornerShape(16.dp)).background(Surface1).padding(14.dp),
-    verticalArrangement = Arrangement.spacedBy(2.dp),
+    modifier =
+      modifier
+        .clip(RoundedCornerShape(16.dp))
+        .background(Surface1)
+        .border(1.dp, Hairline, RoundedCornerShape(16.dp))
+        .padding(14.dp),
+    verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {
-    Text(label, style = MaterialTheme.typography.bodySmall, color = Muted)
-    Text(value, style = MaterialTheme.typography.headlineMedium)
+    Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = Muted)
+    Text(value, style = MaterialTheme.typography.headlineMedium, color = accent ?: Ink)
   }
 }
 
@@ -165,9 +200,61 @@ fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
 @Composable
 fun EmptyState(text: String, modifier: Modifier = Modifier) {
   Box(
-    modifier.fillMaxWidth().border(1.5.dp, Surface2, RoundedCornerShape(16.dp)).padding(24.dp),
+    modifier = modifier.fillMaxWidth().border(1.dp, Hairline, RoundedCornerShape(16.dp)).padding(24.dp),
     contentAlignment = Alignment.Center,
   ) {
     Text(text, style = MaterialTheme.typography.bodyMedium, color = Muted)
   }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ExerciseSheet(
+  exercise: Exercise,
+  isBookmarked: Boolean,
+  onToggleBookmark: () -> Unit,
+  onDismiss: () -> Unit,
+) {
+  ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Surface1) {
+    Column(
+      Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+      verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+      Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp)).background(StudioFrame).border(1.dp, Hairline, RoundedCornerShape(16.dp))) {
+        ExerciseFigure(
+          motion = exercise.motion,
+          exerciseId = exercise.id,
+          playing = true,
+          contentDescription = "${exercise.name} demonstration",
+          modifier = Modifier.fillMaxSize().padding(12.dp),
+        )
+      }
+      Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Overline(exercise.muscles, color = MaterialTheme.colorScheme.primary)
+        IconButton(onClick = onToggleBookmark) {
+          Icon(
+            painter = painterResource(if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark),
+            contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark exercise",
+            tint = if (isBookmarked) MaterialTheme.colorScheme.primary else Muted,
+            modifier = Modifier.size(24.dp),
+          )
+        }
+      }
+      Text(exercise.name.uppercase(), style = MaterialTheme.typography.displaySmall)
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        DifficultyBars(exercise.difficulty)
+        Text(
+          listOf("Beginner", "Intermediate", "Advanced")[exercise.difficulty - 1] + " · " + exercise.equipment.label,
+          style = MaterialTheme.typography.bodyMedium,
+          color = Muted,
+        )
+      }
+      Text("Form tip: ${exercise.formCue}", style = MaterialTheme.typography.bodyLarge)
+    }
+  }
+}
+

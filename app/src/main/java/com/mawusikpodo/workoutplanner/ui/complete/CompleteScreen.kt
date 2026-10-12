@@ -45,12 +45,15 @@ import com.mawusikpodo.workoutplanner.R
 import com.mawusikpodo.workoutplanner.model.Feeling
 import com.mawusikpodo.workoutplanner.model.estimatedKcal
 import com.mawusikpodo.workoutplanner.theme.Ground
+import com.mawusikpodo.workoutplanner.theme.Hairline
 import com.mawusikpodo.workoutplanner.theme.Ink
+import com.mawusikpodo.workoutplanner.theme.MintGlow
 import com.mawusikpodo.workoutplanner.theme.Muted
 import com.mawusikpodo.workoutplanner.theme.Outline
 import com.mawusikpodo.workoutplanner.theme.Surface1
 import com.mawusikpodo.workoutplanner.theme.Surface2
 import com.mawusikpodo.workoutplanner.ui.active.formatClock
+import com.mawusikpodo.workoutplanner.ui.components.Overline
 import com.mawusikpodo.workoutplanner.ui.components.PrimaryButton
 import com.mawusikpodo.workoutplanner.ui.components.StatTile
 import kotlinx.coroutines.launch
@@ -82,57 +85,79 @@ fun CompleteScreen(result: CompleteKey, onDone: () -> Unit, modifier: Modifier =
   BackHandler { save() }
 
   Column(
-    modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 32.dp),
-    verticalArrangement = Arrangement.spacedBy(28.dp),
+    modifier = modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 28.dp),
+    verticalArrangement = Arrangement.spacedBy(26.dp),
   ) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-      Box(Modifier.size(96.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+      Box(
+        Modifier
+          .size(96.dp)
+          .clip(CircleShape)
+          .background(MaterialTheme.colorScheme.primary)
+          .padding(8.dp),
+        contentAlignment = Alignment.Center,
+      ) {
         Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Ground, modifier = Modifier.size(48.dp))
       }
-      Text("WORKOUT\nCOMPLETE", style = MaterialTheme.typography.displayMedium, textAlign = TextAlign.Center)
-      Text(result.workoutName, style = MaterialTheme.typography.bodyLarge, color = Muted)
+      Overline("Session Logged", color = MaterialTheme.colorScheme.primary)
+      Text("WORKOUT\nCRUSHED!", style = MaterialTheme.typography.displayMedium, textAlign = TextAlign.Center)
+      Text(result.workoutName, style = MaterialTheme.typography.titleMedium, color = Muted)
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
       StatTile("Time", formatClock(result.durationSec), Modifier.weight(1f))
-      StatTile("Exercises", "${result.exercisesCompleted}", Modifier.weight(1f))
+      StatTile("Moves", "${result.exercisesCompleted}", Modifier.weight(1f))
       StatTile("kcal (est.)", "~${estimatedKcal(result.durationSec)}", Modifier.weight(1f))
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(18.dp))
+          .background(Surface1)
+          .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
       Text("How did it feel?", style = MaterialTheme.typography.titleMedium)
       Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Feeling.entries.forEach { option ->
           val selected = feeling == option
+          val emoji =
+            when (option) {
+              Feeling.EASY -> "😌"
+              Feeling.JUST_RIGHT -> "💪"
+              Feeling.TOUGH -> "🔥"
+            }
           Surface(
             modifier =
               Modifier.weight(1f).height(48.dp).selectable(selected = selected, role = Role.RadioButton, onClick = { feeling = option }),
             shape = RoundedCornerShape(12.dp),
-            color = if (selected) Surface2 else Surface1,
-            border = if (selected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+            color = if (selected) Surface2 else Ground,
+            border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else Hairline),
           ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-              RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(unselectedColor = Outline), modifier = Modifier.size(20.dp))
+              Text(emoji, style = MaterialTheme.typography.bodyMedium)
               Spacer(Modifier.size(6.dp))
-              Text(option.label, style = MaterialTheme.typography.bodyMedium)
+              Text(option.label, style = MaterialTheme.typography.labelMedium, color = if (selected) MaterialTheme.colorScheme.primary else Ink)
             }
           }
         }
       }
-      Text("Saved with this workout in your history.", style = MaterialTheme.typography.bodySmall, color = Muted)
+      Text("Saved with this workout in your training history.", style = MaterialTheme.typography.bodySmall, color = Muted)
     }
 
     Spacer(Modifier.weight(1f, fill = false))
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-      PrimaryButton("Save & finish", onClick = ::save)
+      PrimaryButton("Save & finish session", onClick = ::save, icon = R.drawable.ic_check, height = 54.dp)
       OutlinedButton(
         onClick = onDone,
         modifier = Modifier.fillMaxWidth().height(52.dp),
         shape = CircleShape,
-        border = BorderStroke(1.5.dp, Outline),
+        border = BorderStroke(1.dp, Hairline),
       ) {
-        Text("Discard", color = Ink, style = MaterialTheme.typography.titleMedium)
+        Text("Discard session", color = Muted, style = MaterialTheme.typography.titleSmall)
       }
     }
   }

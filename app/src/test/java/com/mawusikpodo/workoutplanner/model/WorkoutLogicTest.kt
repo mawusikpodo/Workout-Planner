@@ -1,9 +1,11 @@
 package com.mawusikpodo.workoutplanner.model
 
 import com.mawusikpodo.workoutplanner.data.WorkoutRepository
+import com.mawusikpodo.workoutplanner.ui.components.resolveExerciseAsset
 import java.time.DayOfWeek
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -100,4 +102,52 @@ class WorkoutLogicTest {
     for (goal in 1..7) assertEquals(goal, WorkoutRepository.trainingDaysFor(goal).size)
     assertTrue(DayOfWeek.SUNDAY !in WorkoutRepository.trainingDaysFor(4))
   }
+
+  @Test
+  fun resolveExerciseAsset_matchesDirectExtensionsAndFallbacks() {
+    val assets =
+      setOf(
+        "arm_circles.webp",
+        "burpees.webp",
+        "crunches.gif",
+        "dead_bug.webp",
+        "glute_bridge.gif",
+        "hamstring_stretch.webp",
+        "jumping_jacks.gif",
+        "jump_squats.webp",
+        "knee_push_ups.gif",
+        "mountain_climbers.gif",
+        "plank.webp",
+        "push_ups.gif",
+        "reverse_lunges.gif",
+        "squats.gif",
+      )
+
+    // Direct matches
+    assertEquals("exercises/jumping_jacks.gif", resolveExerciseAsset(assets, "jumping_jacks", Motion.JACK))
+    assertEquals("exercises/push_ups.gif", resolveExerciseAsset(assets, "push_ups", Motion.PUSH))
+    assertEquals("exercises/plank.webp", resolveExerciseAsset(assets, "plank", Motion.PLANK))
+    assertEquals("exercises/burpees.webp", resolveExerciseAsset(assets, "burpees", Motion.BURPEE))
+    assertEquals("exercises/jump_squats.webp", resolveExerciseAsset(assets, "jump_squats", Motion.JUMP_SQUAT))
+    assertEquals("exercises/knee_push_ups.gif", resolveExerciseAsset(assets, "knee_push_ups", Motion.PUSH))
+    assertEquals("exercises/squats.gif", resolveExerciseAsset(assets, "squats", Motion.SQUAT))
+    assertEquals("exercises/reverse_lunges.gif", resolveExerciseAsset(assets, "reverse_lunges", Motion.LUNGE))
+    assertEquals("exercises/arm_circles.webp", resolveExerciseAsset(assets, "arm_circles", Motion.PRESS))
+    assertEquals("exercises/crunches.gif", resolveExerciseAsset(assets, "crunches", Motion.CRUNCH))
+    assertEquals("exercises/dead_bug.webp", resolveExerciseAsset(assets, "dead_bug", Motion.CRUNCH))
+    assertEquals("exercises/glute_bridge.gif", resolveExerciseAsset(assets, "glute_bridge", Motion.BRIDGE))
+    assertEquals("exercises/hamstring_stretch.webp", resolveExerciseAsset(assets, "hamstring_stretch", Motion.HINGE))
+    assertEquals("exercises/mountain_climbers.gif", resolveExerciseAsset(assets, "mountain_climbers", Motion.CLIMBER))
+
+    // Fallbacks via motion when specific exercise ID asset does not exist
+    assertEquals("exercises/push_ups.gif", resolveExerciseAsset(assets, "pike_push_ups", Motion.PUSH))
+    assertEquals("exercises/plank.webp", resolveExerciseAsset(assets, "plank_shoulder_taps", Motion.PLANK))
+    assertEquals("exercises/squats.gif", resolveExerciseAsset(assets, "goblet_squat", Motion.SQUAT))
+    assertEquals("exercises/hamstring_stretch.webp", resolveExerciseAsset(assets, "romanian_deadlift", Motion.HINGE))
+    assertEquals("exercises/arm_circles.webp", resolveExerciseAsset(assets, "shoulder_press", Motion.PRESS))
+
+    // Unknown returns null
+    assertNull(resolveExerciseAsset(emptySet(), "unknown", Motion.PRESS))
+  }
 }
+
